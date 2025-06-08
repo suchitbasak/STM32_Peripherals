@@ -1,0 +1,25 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/Drivers/CMSIS/Include",
+                "${workspaceFolder}/Drivers/STM32G0xx_HAL_Driver/Inc",
+                "${workspaceFolder}/Drivers/CMSIS/Device/ST/STM32G0xx/Include",
+                "/opt/st/stm32cubeclt_1.18.0/GNU-tools-for-STM32/lib/gcc/arm-none-eabi/13.3.1/include",
+                "/opt/st/stm32cubeclt_1.18.0/GNU-tools-for-STM32/lib/gcc/arm-none-eabi/13.3.1/include-fixed",
+                "/opt/st/stm32cubeclt_1.18.0/GNU-tools-for-STM32/arm-none-eabi/include"
+            ],
+            "defines": [
+                "STM32G0B1xx",
+                "USE_HAL_DRIVER"
+            ],
+            "compilerPath": "/opt/st/stm32cubeclt_1.18.0/GNU-tools-for-STM32/bin/arm-none-eabi-gcc",
+            "cStandard": "c17",
+            "cppStandard": "c++98",
+            "intelliSenseMode": "gcc-arm"
+        }
+    ],
+    "version": 4
+}
