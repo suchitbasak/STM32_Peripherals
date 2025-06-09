@@ -90,12 +90,14 @@ void I2C_scan_devices(I2C_HandleTypeDef *hi2c, UART_HandleTypeDef *huart){
 
 
 void AHT20_soft_reset(void){
+  // Send 0xBA to soft reset the temp sensor
   uint8_t reset_cmd = 0xBA;
   HAL_I2C_Master_Transmit(&hi2c1, 0x38 << 1, &reset_cmd, 1, HAL_MAX_DELAY);
   HAL_Delay(50);  // Wait for reset to complete
 }
 
 void AHT20_Init(void){
+  // initialise the AHT20
   uint8_t init_cmd[3] = {0xBE, 0x08, 0x00};
   HAL_I2C_Master_Transmit(&hi2c1, 0x38 << 1, init_cmd, 3, HAL_MAX_DELAY);
   HAL_Delay(50);
@@ -109,16 +111,23 @@ void AHT20_trigger_measurement(void){
 }
 
 void AHT20_get_measurement(uint8_t *raw_data){
+  // sennd this to receive one measuremetn
   HAL_I2C_Master_Receive(&hi2c1, 0x38 << 1, raw_data, 6, HAL_MAX_DELAY);
 }
 
 // convert sensor data to celsius and % humidity
 void AHT20_process_data(uint8_t raw_data[6], float *temperature_c, float *humidity_percent){
+  uint32_t raw_temp = 0;
+  uint32_t raw_humidity = 0;
 
-  uint32_t raw_humidity = ((uint32_t)raw_data[1] << 12) | ((uint32_t)raw_data[2] << 4) | ((uint32_t)(raw_data[3]  & 0xF0)>>4);
-  uint32_t raw_temp = ((uint32_t)(raw_data[3] & 0x0F) << 16) | ((uint32_t)raw_data[4] << 8) | (uint32_t)(raw_data[5]);
-
+  raw_humidity = ((uint32_t)raw_data[1] << 12) | ((uint32_t)raw_data[2] << 4) | ((uint32_t)(raw_data[3]  & 0xF0)>>4);
+  raw_temp = ((uint32_t)(raw_data[3] & 0x0F) << 16) | ((uint32_t)raw_data[4] << 8) | (uint32_t)(raw_data[5]);
+  
+  // AHT20 sensor measures a temperature range of -50°C to +150°C
+  // raw temp value / 2^20 (to normalise it)
   *temperature_c = ((float)raw_temp / 1048576.0f) * 200.0f - 50.0f;
+  
+  // Similarly humidity is also normalised first and then scaled to a %
   *humidity_percent = ((float)raw_humidity / 1048576.0f) * 100.0f;
 }
 // pointers because ʸᴼᵤ ᶜᴬₙᴺₒᵀ ᴳₑᵀ ² ᴿₑᵀᵤᴿₙ ᵥᴬₗᵁₑˢ ᶠᵣᴼₘ ₐ ᶠᵁₙᶜₜᴵₒᴺ ᴵₙ ᶜ
