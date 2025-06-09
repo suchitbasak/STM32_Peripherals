@@ -6,6 +6,7 @@
 #include "main.h"
 #include "leds.h"
 #include "i2c.h"
+#include "spi.h"
 #include "usart.h"
 
 
@@ -17,6 +18,7 @@ int main(void){
     led_onboard_init();
 
     MX_I2C1_Init();
+    MX_SPI1_Init();
     MX_USART2_UART_Init();
 
     AHT20_soft_reset();
@@ -45,7 +47,7 @@ int main(void){
         //    raw_data[0], raw_data[1], raw_data[2],
         //    raw_data[3], raw_data[4], raw_data[5]);
 
-        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+        // HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
         // check if sensor is busy
         if ((raw_data[0] & 0x80) == 0){
@@ -54,8 +56,16 @@ int main(void){
         } else {
             sprintf(buffer, "Sensor is busy or output is invalid\r\n");
         }
-        
+
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+        // read chip ID register from BMI088
+        uint8_t accel_chip_id;
+
+        BMI088_accel_get_chip_id(&accel_chip_id);
+        sprintf( buffer, "Accel Chip ID: 0x%02X\n", accel_chip_id);
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
         HAL_Delay(1000);
     }
 }
