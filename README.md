@@ -1,11 +1,16 @@
-# STM32 + Peripherals
+# STM32 + Peripherals term
 
-This repository will contain code to interface different peripherals with STM32G0B1xx. I have started with an AHT20 breakout board, connected to the STM32 Nucloeboard via I2C. Temperature and relative humidity measurements are printed via UART. I will be adding support for more peripherals like an IMU over SPI, audio in/ out over I2S, LEDs over GPIO/PWM, another MCU over UART etc.
+Interfacing a few peripherals with the STM32G0B1xx microcontroller, incliding a temperature sensor, IMU, LEDs and a screen.
 
-I haven't decided if I want to make a PCB with the sensors yet.
+- AHT20 temperature sensor is connected via I2C, measuring temperature and relative humidity and displaying results over UART.
+- I am currently working on adding the writing the IMU code.
+- I have not finalised the screen at this point.
+- Audio will be added in the next version
+- Eventually I want to design an STM32 PCB with all these sensors.
 
-The .IOC project file is availble and has been used to generate some of the code. However I have rewritten `main.c`, `leds.c` and `i2c.c` since I prefer cleaner code.
-
+STM32Cube ICube MXDE is used to generate a ot of the code
+The .IOC project file is availble and has been used to generate some of the code. However I have rewritten `main.c`, `leds.c` , `i2c.c` etc. since I prefer cleaner code.
+ 
 ## How to build and flash
 1. Make a build directory to save files: `mkdir build && cd build`
 2. Tell cmake to generate the build system: `cmake ..`
