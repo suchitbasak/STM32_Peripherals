@@ -8,7 +8,7 @@ Interfacing a few peripherals with the STM32G0B1xx microcontroller, incliding a 
 - Audio will be added in the next version
 - Eventually I want to design an STM32 PCB with all these sensors.
 
-STM32Cube ICube MXDE is used to generate a ot of the code
+STM32Cube MX is used to generate a lot of the code
 The .IOC project file is availble and has been used to generate some of the code. However I have rewritten `main.c`, `leds.c` , `i2c.c` etc. since I prefer cleaner code.
  
 ## How to build and flash

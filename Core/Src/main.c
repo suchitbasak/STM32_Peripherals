@@ -9,9 +9,104 @@
 #include "spi.h"
 #include "usart.h"
 
+#define BMI088_ACC_CHIP_ID_REG      0x00
+#define BMI088_ACC_CONF_REG         0x40
+#define BMI088_ACC_PWR_CTRL_REG     0x7D
+#define BMI088_ACC_SOFTRESET_REG    0x7E
+#define BMI088_ACC_RANGE            0x41
+#define BMI088_ACC_PWR_CONF_REG     0x7C // From Linux driver - disables suspend mode
+
 
 void SystemClock_Config(void);
 
+
+int main(void){
+    HAL_Init();
+    SystemClock_Config();
+    MX_SPI1_Init();
+    MX_GPIO_Init();
+    MX_USART2_UART_Init();
+    led_debug_init();
+
+    HAL_StatusTypeDef init_status;
+    HAL_StatusTypeDef data_ready_status;
+    // uint8_t chipid;
+    float raw_x, raw_y, raw_z;
+
+    init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9);
+    uint8_t chipid = 0;
+    uint8_t accel_drdy = 0;
+    HAL_StatusTypeDef accel_data_status;
+    char buffer[100]; //for printing
+
+    chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
+    sprintf(buffer, "chipid 0x%02X\r\n", chipid);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+    sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+    // low pass
+    SPI_write_to_register(&hspi1, GPIOA, GPIO_PIN_9, 0x40, 0x09);
+
+    // wait to receive input
+    //HAL_UART_Receive_IT()
+    while(1){
+
+        __NOP();
+        
+        if(init_status == HAL_OK){
+            led_debug_on(); // LED on means init was successful
+            
+            //chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
+            if(chipid == 0x1E){
+                // chip id is okay, let us look at the data ready register
+                do{
+                accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
+                } while ((accel_drdy & 0x80) == 0);
+
+                // read data
+                accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z);
+                if (accel_data_status == HAL_OK){
+                sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2\r\n", raw_x, raw_y, raw_z);
+                //sprintf(buffer, "%.2f, %.2f, %.2f\r\n", raw_x, raw_y, raw_z);
+                HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+                // read sensitivity
+                uint16_t sensitivity;
+                sensitivity = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x41);
+                //sprintf(buffer, "0x%02X\r\n",sensitivity);
+                //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+                HAL_Delay(1000);
+                }
+            }
+        //HAL_Delay(500);
+
+        }else{
+            // Handle the case where initialization failed in the first place
+            led_debug_toggle();
+            HAL_Delay(100);
+        }
+    } 
+    //HAL_Delay(1000);
+}
+        
+
+   //      // Again
+        //HAL_Delay(1000);
+       //} else{
+        // failed, led anxious
+        //sprintf(buffer, "SPI failed\r\n");
+        //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+        //led_debug_toggle();
+        //HAL_Delay(100);
+       //}
+    
+   // }
+//}
+
+
+/*
 int main(void){
     HAL_Init();
     SystemClock_Config();
@@ -32,6 +127,9 @@ int main(void){
     I2C_scan_devices(&hi2c1, &huart2);
     // Optional delay
     // HAL_Delay(5000);
+
+
+    HAL_Delay(100);
     
     while(1){
         led_onboard_toggle();
@@ -57,19 +155,20 @@ int main(void){
             sprintf(buffer, "Sensor is busy or output is invalid\r\n");
         }
 
-        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+        //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
         // read chip ID register from BMI088
-        uint8_t accel_chip_id;
+        uint8_t accel_chip_id = 0;
+        BMI088_accel_spi_wakeup(&hspi1);
 
         BMI088_accel_get_chip_id(&accel_chip_id);
         sprintf( buffer, "Accel Chip ID: 0x%02X\n", accel_chip_id);
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-        HAL_Delay(1000);
+        HAL_Delay(200);
     }
 }
-
+*/
 void SystemClock_Config(void){
     {
         RCC_OscInitTypeDef RCC_OscInitStruct = {0};
@@ -115,3 +214,5 @@ void Error_Handler(void)
   }
   /* USER CODE END Error_Handler_Debug */
 }
+
+

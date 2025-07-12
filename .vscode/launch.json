@@ -1,0 +1,14 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "STM32 Debug (st-util)",
+      "type": "cortex-debug",
+      "request": "launch",
+      "servertype": "stutil",
+      "cwd": "${workspaceFolder}",
+      "executable": "./build/${workspaceFolderBasename}.elf", 
+      "device": "STM32G0B1RE"
+    }
+  ]
+}
