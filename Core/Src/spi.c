@@ -1,5 +1,6 @@
 //#include "stm32g0xx_hal_spi.h"
 #include "spi.h"
+#include <stdio.h>
 
 // --- BMI088 Accelerometer Register Definitions
 #define BMI088_ACC_CHIP_ID_REG      0x00
@@ -141,6 +142,9 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   
   HAL_StatusTypeDef status;
 
+  // wait 1ms after powering up the sensor
+  HAL_Delay(5);
+
   // Soft reset the sensor
   //SPI_write_to_register(hspi, cs_port, cs_pin, BMI088_ACC_SOFTRESET_REG, 0xB6);
   //HAL_Delay(50); // make sure the sensor has enough time to reset
@@ -155,11 +159,11 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   HAL_Delay(10); // wait for write operation to finish
   
   // configure sensor to stay awake
-  SPI_write_to_register(hspi, cs_port, cs_pin, BMI088_ACC_CONF_REG, 0x28);
-  HAL_Delay(10);
+  //SPI_write_to_register(hspi, cs_port, cs_pin, BMI088_ACC_CONF_REG, 0x28);
+  //HAL_Delay(10);
 
   // wait for 450 microseconds
-  HAL_Delay(500);
+  HAL_Delay(0.5);
 
   chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
 
@@ -191,12 +195,11 @@ uint8_t BMI088_accel_dataready(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, u
 
 
 // read accelerometer data 
-HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, float *accel_x_mss, float *accel_y_mss, float *accel_z_mss){
+HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, float *accel_x_mss, float *accel_y_mss, float *accel_z_mss, uint8_t *range, char *buffer){
   // you need to transmit and receive 7 bytes,
   uint8_t tx_buffer[7] = {0x12 | 0x80, 0, 0, 0, 0, 0, 0};
   uint8_t rx_buffer[7];
   HAL_StatusTypeDef status; // check if this is how you init status in all functions, uniformity
-  uint16_t range;
   // uint16_t accel_x, accel_y, accel_z;
 
   // pull cs low to select sensor
@@ -209,13 +212,19 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
   HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
 
   if (status == HAL_OK){
-    int16_t raw_x = (int16_t)((rx_buffer[1] << 8) | rx_buffer[0]);
-    int16_t raw_y = (int16_t)((rx_buffer[3] << 8) | rx_buffer[2]);
-    int16_t raw_z = (int16_t)((rx_buffer[5] << 8) | rx_buffer[4]);
+    uint8_t acc_conf = SPI_read_from_register(hspi, cs_port, cs_pin, 0x40)&0b1111;
+    sprintf(buffer, ", ACC_CONF: %u\r\n",acc_conf);
+    int16_t raw_x = (int16_t)((rx_buffer[2] << 8) | rx_buffer[1]);
+    int16_t raw_y = (int16_t)((rx_buffer[4] << 8) | rx_buffer[3]);
+    int16_t raw_z = (int16_t)((rx_buffer[6] << 8) | rx_buffer[5]);
 
     // NOTE: It is much more efficient to do this only once in your init function
     // and store the result in a global variable, like in the artifact.
+    
     uint8_t range_reg_val = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_RANGE);
+
+    *range = range_reg_val & 0X03;
+
     float sensitivity = 0.0f;
     switch (range_reg_val & 0x03)
     {
