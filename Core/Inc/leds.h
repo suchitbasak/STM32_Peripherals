@@ -3,9 +3,11 @@
 #ifndef LEDS_H
 #define LEDS_H
 
-//#include "stm32g0xx_hal_conf.h"
-
 void led_onboard_init(void);
 void led_onboard_toggle(void);
+
+void led_debug_init(void);
+void led_debug_on(void);
+void led_debug_toggle(void);
 
 #endif

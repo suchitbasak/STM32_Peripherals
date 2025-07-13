@@ -19,7 +19,8 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 # Set the project name
-set(CMAKE_PROJECT_NAME temp-sensor-and-leds)
+get_filename_component(ProjectNameFromFolder ${CMAKE_CURRENT_SOURCE_DIR} NAME)
+
 
 # Include toolchain file
 include("cmake/gcc-arm-none-eabi.cmake")
@@ -28,7 +29,7 @@ include("cmake/gcc-arm-none-eabi.cmake")
 set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Core project settings
-project(${CMAKE_PROJECT_NAME})
+project(${ProjectNameFromFolder})
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable CMake support for ASM and C languages
