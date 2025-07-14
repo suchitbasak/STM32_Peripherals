@@ -34,6 +34,7 @@ int main(void){
     float raw_x, raw_y, raw_z;
     uint8_t range; //range reg val
 
+    BMI088_accel_soft_reset(&hspi1, GPIOA, GPIO_PIN_9);
     init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9);
     uint8_t chipid = 0;
     uint8_t accel_drdy = 0;
@@ -49,9 +50,6 @@ int main(void){
     sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    // low pass
-    SPI_write_to_register(&hspi1, GPIOA, GPIO_PIN_9, 0x40, 0x09);
-
     // wait to receive input
     //HAL_UART_Receive_IT()
     while(1){
@@ -61,7 +59,6 @@ int main(void){
         if(init_status == HAL_OK){
             led_debug_on(); // LED on means init was successful
             
-            //chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
             if(chipid == 0x1E){
                 // chip id is okay, let us look at the data ready register
                 
@@ -88,7 +85,7 @@ int main(void){
             }
         //HAL_Delay(500);
 
-        }else{
+        } else {
             // Handle the case where initialization failed in the first place
             led_debug_toggle();
             HAL_Delay(100);
