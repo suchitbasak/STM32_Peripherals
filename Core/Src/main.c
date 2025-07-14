@@ -32,12 +32,16 @@ int main(void){
     HAL_StatusTypeDef data_ready_status;
     // uint8_t chipid;
     float raw_x, raw_y, raw_z;
+    uint8_t range; //range reg val
 
+    BMI088_accel_soft_reset(&hspi1, GPIOA, GPIO_PIN_9);
     init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9);
     uint8_t chipid = 0;
     uint8_t accel_drdy = 0;
     HAL_StatusTypeDef accel_data_status;
     char buffer[100]; //for printing
+    char buffer_reg[100]; // for printing debug register values
+
 
     chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
     sprintf(buffer, "chipid 0x%02X\r\n", chipid);
@@ -45,9 +49,6 @@ int main(void){
 
     sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-
-    // low pass
-    SPI_write_to_register(&hspi1, GPIOA, GPIO_PIN_9, 0x40, 0x09);
 
     // wait to receive input
     //HAL_UART_Receive_IT()
@@ -58,23 +59,25 @@ int main(void){
         if(init_status == HAL_OK){
             led_debug_on(); // LED on means init was successful
             
-            //chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
             if(chipid == 0x1E){
                 // chip id is okay, let us look at the data ready register
+                
                 do{
                 accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
+                //HAL_Delay
                 } while ((accel_drdy & 0x80) == 0);
 
                 // read data
-                accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z);
+                accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z, &range, &buffer_reg);
                 if (accel_data_status == HAL_OK){
-                sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2\r\n", raw_x, raw_y, raw_z);
+                sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2, R: %u\r\n", raw_x, raw_y, raw_z, range);
                 //sprintf(buffer, "%.2f, %.2f, %.2f\r\n", raw_x, raw_y, raw_z);
                 HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+                HAL_UART_Transmit(&huart2, (uint8_t*)buffer_reg, strlen(buffer_reg), HAL_MAX_DELAY);
 
                 // read sensitivity
-                uint16_t sensitivity;
-                sensitivity = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x41);
+                //uint16_t sensitivity;
+                //sensitivity = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x41);
                 //sprintf(buffer, "0x%02X\r\n",sensitivity);
                 //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
                 HAL_Delay(1000);
@@ -82,7 +85,7 @@ int main(void){
             }
         //HAL_Delay(500);
 
-        }else{
+        } else {
             // Handle the case where initialization failed in the first place
             led_debug_toggle();
             HAL_Delay(100);
