@@ -19,5 +19,6 @@ uint8_t BMI088_accel_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uin
 uint8_t BMI088_accel_dataready(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin);
 
 HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, float *accel_x, float *accel_y, float *accel_z, char *buffer);
+HAL_StatusTypeDef BMI088_accel_self_test(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, char *buffer);
 
 #endif /* __SPI_H__ */

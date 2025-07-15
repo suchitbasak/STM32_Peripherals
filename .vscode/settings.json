@@ -4,7 +4,9 @@
         "main.h": "c",
         "i2c.h": "c",
         "spi.h": "c",
-        "leds.h": "c"
+        "leds.h": "c",
+        "stm32g0xx_hal.h": "c",
+        "stdio.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

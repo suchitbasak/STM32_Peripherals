@@ -25,15 +25,16 @@ int main(void){
 
     HAL_StatusTypeDef init_status;
     HAL_StatusTypeDef data_ready_status;
+    HAL_StatusTypeDef self_test_status = HAL_OK;
     // uint8_t chipid;
     float raw_x, raw_y, raw_z;
     uint8_t range; //range reg val
+    uint8_t accel_drdy;
     char buffer[500]; //for printing
 
     BMI088_accel_soft_reset(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
     init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
     uint8_t chipid = 0;
-    uint8_t accel_drdy = 0;
     HAL_StatusTypeDef accel_data_status;
 
     chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
@@ -43,11 +44,14 @@ int main(void){
     sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
+    // Uncomment the line below to perform a self test
+    // self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
+
     while(1){
 
         __NOP();
         
-        if(init_status == HAL_OK) {
+        if(init_status == HAL_OK && self_test_status == HAL_OK) {
             led_debug_on(); // LED on means init was successful
             
             if(chipid == 0x1E) {

@@ -9,6 +9,7 @@
 #define BMI088_ACC_SOFTRESET_REG    0x7E
 #define BMI088_ACC_RANGE            0x41
 #define ACC_PWR_CONF_REG            0x7C
+#define ACC_SELF_TEST_REG           0x6D
 
 
 #define BMI088_ACC_CHIP_ID          0x1E
@@ -176,12 +177,12 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   
   // configure sensor to stay in normal mode
   CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
-  HAL_Delay(50);
+  HAL_Delay(60);
 
 
   // Set acc configuration to normal BW and ODR = 100 Hz
   CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
-  HAL_Delay(50);
+  HAL_Delay(60);
 
   chip_id = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
 
@@ -202,6 +203,83 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
 uint8_t BMI088_accel_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
   uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
   return chip_id;
+}
+
+
+// Perform a self-test
+HAL_StatusTypeDef BMI088_accel_self_test(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, char *buffer) {
+  HAL_StatusTypeDef status;
+  float accel_values[6];
+  uint8_t tx_buffer[7] = {0x12 | 0x80, 0, 0, 0, 0, 0, 0};
+  uint8_t rx_buffer[7];
+  
+  CHECK_WRITE(BMI088_ACC_RANGE, 0x03);
+  HAL_Delay(60);
+
+  CHECK_WRITE(BMI088_ACC_CONF_REG, 0xAC);
+  HAL_Delay(3);
+
+  CHECK_WRITE(ACC_SELF_TEST_REG, 0x0D);
+  HAL_Delay(60);
+
+  HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
+
+  status = HAL_SPI_TransmitReceive(hspi, tx_buffer, rx_buffer, 7, HAL_MAX_DELAY);
+
+  HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
+
+  float sensitivity = 1365.0f;
+
+  if (status == HAL_OK){
+
+    int16_t raw_x = (int16_t)((rx_buffer[2] << 8) | rx_buffer[1]);
+    int16_t raw_y = (int16_t)((rx_buffer[4] << 8) | rx_buffer[3]);
+    int16_t raw_z = (int16_t)((rx_buffer[6] << 8) | rx_buffer[5]);
+
+    accel_values[0] = ((float)raw_x / sensitivity);
+    accel_values[1] = ((float)raw_y / sensitivity);
+    accel_values[2] = ((float)raw_z / sensitivity);
+  } else {
+    sprintf(buffer, "Positive self-test value read failed");
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    return status;
+  }
+
+  CHECK_WRITE(ACC_SELF_TEST_REG, 0x09);
+  HAL_Delay(60);
+
+  HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_RESET);
+
+  status = HAL_SPI_TransmitReceive(hspi, tx_buffer, rx_buffer, 7, HAL_MAX_DELAY);
+
+  HAL_GPIO_WritePin(cs_port, cs_pin, GPIO_PIN_SET);
+
+  if (status == HAL_OK){
+
+    int16_t raw_x = (int16_t)((rx_buffer[2] << 8) | rx_buffer[1]);
+    int16_t raw_y = (int16_t)((rx_buffer[4] << 8) | rx_buffer[3]);
+    int16_t raw_z = (int16_t)((rx_buffer[6] << 8) | rx_buffer[5]);
+
+    accel_values[3] = ((float)raw_x / sensitivity);
+    accel_values[4] = ((float)raw_y / sensitivity);
+    accel_values[5] = ((float)raw_z / sensitivity);
+  } else {
+    sprintf(buffer, "Negative self-test value read failed");
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    return status;
+  }
+
+  CHECK_WRITE(ACC_SELF_TEST_REG, 0x00);
+  HAL_Delay(60);
+
+  float dx = fabsf(accel_values[0] - accel_values[3]);
+  float dy = fabsf(accel_values[1] - accel_values[4]);
+  float dz = fabsf(accel_values[2] - accel_values[5]);
+
+  sprintf(buffer, "ST dX=%.2f dY=%.2f dZ=%.2f\r\n", dx, dy, dz);
+  HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+  return ((dx>=0.8f && dy>=0.8f && dz>=0.4f) ? HAL_OK : HAL_ERROR);
 }
 
 
