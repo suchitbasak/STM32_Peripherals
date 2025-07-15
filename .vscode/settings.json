@@ -1,6 +1,10 @@
 {
     "files.associations": {
-        "compare": "c"
+        "compare": "c",
+        "main.h": "c",
+        "i2c.h": "c",
+        "spi.h": "c",
+        "leds.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

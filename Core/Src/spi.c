@@ -16,6 +16,13 @@
 
 #define G_VALUE                     9.80665f
 
+#define CHECK_WRITE(reg, val)       if(SPI_write_to_register(hspi, cs_port, cs_pin, reg, val) != HAL_OK) {\
+                                    sprintf(buffer, "[BMI088 Init] Error writing to register 0x%02X\r\n", reg);\
+                                    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer_reg), HAL_MAX_DELAY);\
+                                    status = HAL_ERROR;\
+                                    return status;\
+                                  }
+
 
 
 SPI_HandleTypeDef hspi1;
@@ -104,7 +111,7 @@ HAL_StatusTypeDef SPI_write_to_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* c
   
   if (HAL_SPI_Transmit(hspi, tx_buffer, 2, HAL_MAX_DELAY) != HAL_OK){
     status = HAL_ERROR;
-  } else{
+  } else {
     status = HAL_OK;
   }
 
@@ -137,21 +144,21 @@ uint8_t SPI_read_from_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, u
 
 }
 
-void BMI088_accel_soft_reset(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin) {
-  HAL_StatusTypeDef status;
+HAL_StatusTypeDef BMI088_accel_soft_reset(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, char *buffer) {
+  HAL_StatusTypeDef status = HAL_OK;
 
   // wait >2ms after powering up the sensor
   HAL_Delay(5);
 
   // Soft reset the sensor to ensure internal FSMs are initialized
-  SPI_write_to_register(hspi, cs_port, cs_pin, BMI088_ACC_SOFTRESET_REG, 0xB6);
-  HAL_Delay(50); // Wait for stabilization after soft reset
-  return;
+  CHECK_WRITE(BMI088_ACC_SOFTRESET_REG, 0xB6);
+  HAL_Delay(100); // Wait for stabilization after soft reset
+  return status;
 }
 
 
 // now lets initialise the accelerometer
-HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
+HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, char *buffer) {
   
   HAL_StatusTypeDef status;
 
@@ -163,27 +170,27 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   // Switch the ACC from suspend mode to normal mode
 
   // Write to ACC_PWR_CTRL_REG, to enter "normal mode"
-  SPI_write_to_register(hspi, cs_port, cs_pin, BMI088_ACC_PWR_CTRL_REG, 0x04);
+  CHECK_WRITE(BMI088_ACC_PWR_CTRL_REG, 0x04);
   // wait for 450 microseconds
-  HAL_Delay(1);
+  HAL_Delay(2);
   
   // configure sensor to stay in normal mode
-  SPI_write_to_register(hspi, cs_port, cs_pin, ACC_PWR_CONF_REG, 0x00);
-  HAL_Delay(10);
+  CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
+  HAL_Delay(50);
 
 
   // Set acc configuration to normal BW and ODR = 100 Hz
-  SPI_write_to_register(hspi, cs_port, cs_pin, BMI088_ACC_CONF_REG, 0xA8);
-  HAL_Delay(10);
+  CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
+  HAL_Delay(50);
 
-
-
-  chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
+  chip_id = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
 
   // now, verify communication
   if (chip_id == BMI088_ACC_CHIP_ID){
     status = HAL_OK;
-  } else{
+  } else {
+    sprintf(buffer, "[ERROR] Value of chip_id read from the register is: 0x%02X\r\n", chip_id);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer_reg), HAL_MAX_DELAY);
     status = HAL_ERROR;
   }
 
@@ -208,7 +215,7 @@ uint8_t BMI088_accel_dataready(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, u
 
 
 // read accelerometer data 
-HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, float *accel_x_mss, float *accel_y_mss, float *accel_z_mss, uint8_t *range, char *buffer){
+HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, float *accel_x_mss, float *accel_y_mss, float *accel_z_mss, char *buffer){
   // you need to transmit and receive 7 bytes,
   uint8_t tx_buffer[7] = {0x12 | 0x80, 0, 0, 0, 0, 0, 0};
   uint8_t rx_buffer[7];
@@ -225,7 +232,6 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
 
   if (status == HAL_OK){
     uint8_t acc_conf = SPI_read_from_register(hspi, cs_port, cs_pin, 0x40)&0b1111;
-    sprintf(buffer, ", ACC_CONF: %u\r\n",acc_conf);
 
     // First byte received in rx_buffer is dummy, second byte onwards, we get LSB and then MSB for each co-ordinate
     int16_t raw_x = (int16_t)((rx_buffer[2] << 8) | rx_buffer[1]);
@@ -234,7 +240,8 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
     
     uint8_t range_reg_val = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_RANGE);
 
-    *range = range_reg_val & 0X03;
+    sprintf(buffer, ", ACC_CONF: %u, R: %u\r\n",acc_conf, range_reg_val);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer_reg), HAL_MAX_DELAY);
 
     float sensitivity = 0.0f;
     switch (range_reg_val & 0x03)
