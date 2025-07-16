@@ -1,4 +1,3 @@
-
 //#include "stm32g0xx_hal_conf.h"
 #include <string.h>
 #include <stdio.h>
@@ -33,35 +32,29 @@ int main(void){
 
     BMI088_accel_soft_reset(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
     init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
-    uint8_t chipid = 0;
     HAL_StatusTypeDef accel_data_status;
 
-    chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
-    sprintf(buffer, "\r\n\r\nchipid 0x%02X\r\n", chipid);
+    sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-
-    //sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
-    //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     // Uncomment the line below to perform a self test
     // self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
 
 
-    while(1){
+    if(init_status == HAL_OK) {
+        // chip id is okay, let us look at the data ready register
+        sprintf(buffer, "Chip ID read correctly, don'tcha worreh!\r\n");
+        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-        __NOP();
-        if(init_status == HAL_OK) {
+        while(1) {
+
+            __NOP();
             led_debug_on(); // LED on means init was successful
-
-            // chip id is okay, let us look at the data ready register
-            sprintf(buffer, "Chip ID read correctly, don'tcha worreh!\r\n");
-            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-            
             
             do{
             accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
             } while ((accel_drdy & 0x80) == 0);
-    
+
 
             // read data
             accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z, &buffer);
@@ -72,15 +65,18 @@ int main(void){
             HAL_Delay(1000);
 
             }
-        } else {
+        } 
+    } else {
             // Handle the case where initialization failed in the first place
             sprintf(buffer, "[ERROR] Value of chip_id read from the register is: 0x%02X\r\n", chipid);
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-
-            led_debug_toggle();
-            HAL_Delay(100);
+            while(1) {
+                led_debug_toggle();
+                HAL_Delay(100);
+            }
+            
         } 
-    } 
+    
 }
 
 

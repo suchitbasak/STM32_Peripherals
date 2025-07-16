@@ -6,7 +6,8 @@
         "spi.h": "c",
         "leds.h": "c",
         "stm32g0xx_hal.h": "c",
-        "stdio.h": "c"
+        "stdio.h": "c",
+        "stm32g0xx_hal_conf.h": "c"
     },
     "C_Cpp.errorSquiggles": "enabled"
 }

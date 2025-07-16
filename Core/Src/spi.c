@@ -106,7 +106,7 @@ void HAL_SPI_MspDeInit(SPI_HandleTypeDef* spiHandle)
 
 // using IMU BMI088 from Bosch
 
-HAL_StatusTypeDef SPI_write_to_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, uint8_t reg, uint8_t data){
+HAL_StatusTypeDef SPI_write_to_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, uint8_t reg, uint8_t data) {
   HAL_StatusTypeDef status;
   uint8_t tx_buffer[2];
   tx_buffer[0] = reg;
@@ -127,7 +127,7 @@ HAL_StatusTypeDef SPI_write_to_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* c
 }
 
 
-uint8_t SPI_read_from_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, uint8_t reg){
+uint8_t SPI_read_from_register(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin, uint8_t reg) {
   uint8_t tx_buffer[2];
   uint8_t rx_buffer[2];
   uint8_t data; // data read from the register
@@ -153,12 +153,21 @@ HAL_StatusTypeDef BMI088_accel_soft_reset(SPI_HandleTypeDef *hspi, GPIO_TypeDef*
   HAL_StatusTypeDef status = HAL_OK;
 
   // wait >2ms after powering up the sensor
-  HAL_Delay(5);
+  HAL_Delay(50);
 
   // Soft reset the sensor to ensure internal FSMs are initialized
   CHECK_WRITE(BMI088_ACC_SOFTRESET_REG, 0xB6);
   HAL_Delay(100); // Wait for stabilization after soft reset
+
+  // Dummy chip ID read
+  uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
   return status;
+}
+
+// Simple µs delay (for STM32 HAL)
+void delayMicroseconds(uint32_t us) {
+    uint32_t ticks = us * (SystemCoreClock / 1000000) / 10;
+    while (ticks--) __NOP();
 }
 
 
@@ -167,31 +176,28 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   
   HAL_StatusTypeDef status;
 
-
   // Switch accel to SPI mode (it starts in I2C mode by default) by reading from the CSB1 pin
-  // Perform a dummy read
+  // Perform two dummy reads
   uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
+  chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
 
   // Switch the ACC from suspend mode to normal mode
+
+  // configure sensor to stay in normal mode
+  CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
+  HAL_Delay(60);
 
   // Write to ACC_PWR_CTRL_REG, to enter "normal mode"
   CHECK_WRITE(BMI088_ACC_PWR_CTRL_REG, 0x04);
   // wait for 450 microseconds
   HAL_Delay(2);
-  
-  // configure sensor to stay in normal mode
-  CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
-  HAL_Delay(60);
 
-
-  // Set acc configuration to normal BW and ODR = 100 Hz
-  CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
-  HAL_Delay(60);
-
-  chip_id = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
+  // Performing one more dummy read just in case :P
+  uint8_t chip_id_final = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
+  chip_id_final = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
 
   // now, verify communication
-  if (chip_id == BMI088_ACC_CHIP_ID){
+  if (chip_id_final == BMI088_ACC_CHIP_ID){
     status = HAL_OK;
     sprintf(buffer, "ALL OK! Value of chip_id read from the register is: 0x%02X\r\n", chip_id);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
@@ -199,17 +205,25 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
     sprintf(buffer, "[ERROR] Value of chip_id read from the register is: 0x%02X\r\n", chip_id);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
     status = HAL_ERROR;
+    return(status);
   }
+
+  // Set acc configuration to normal BW and ODR = 100 Hz
+  CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
+  HAL_Delay(60);
+
+  // Set range = 0x01 for +/-6g
+  CHECK_WRITE(BMI088_ACC_RANGE, 0x01);
+  HAL_Delay(60);
 
   return(status);
 }
 
-
-// read Chip ID register for the accelerometer from register 0x00
-uint8_t BMI088_accel_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
-  uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
-  return chip_id;
-}
+// // read Chip ID register for the accelerometer from register 0x00
+// uint8_t BMI088_accel_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
+//   uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
+//   return chip_id;
+// }
 
 
 // Perform a self-test
