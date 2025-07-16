@@ -38,14 +38,14 @@ int main(void){
     HAL_StatusTypeDef accel_data_status;
 
     chipid = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
-    sprintf(buffer, "chipid 0x%02X\r\n", chipid);
+    sprintf(buffer, "\r\n\r\nchipid 0x%02X\r\n", chipid);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     // Uncomment the line below to perform a self test
-    // self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
+    self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
 
     while(1){
 

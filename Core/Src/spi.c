@@ -27,6 +27,7 @@
 
 
 SPI_HandleTypeDef hspi1;
+char buffer_reg[100]; 
 
 /* SPI1 init function */
 void MX_SPI1_Init(void)
