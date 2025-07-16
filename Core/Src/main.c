@@ -50,7 +50,7 @@ int main(void){
     while(1){
 
         __NOP();
-        if(chipid == 0x1E & self_test_status == HAL_OK) {
+        if(init_status == HAL_OK) {
             led_debug_on(); // LED on means init was successful
 
             // chip id is okay, let us look at the data ready register
