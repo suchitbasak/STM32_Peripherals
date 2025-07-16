@@ -41,45 +41,49 @@ int main(void){
     sprintf(buffer, "\r\n\r\nchipid 0x%02X\r\n", chipid);
     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
-    sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    //sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
+    //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     // Uncomment the line below to perform a self test
     self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
 
+
     while(1){
 
         __NOP();
-        
-        if(init_status == HAL_OK && self_test_status == HAL_OK) {
+        if(chipid == 0x1E & self_test_status == HAL_OK) {
             led_debug_on(); // LED on means init was successful
+
+            // chip id is okay, let us look at the data ready register
+            sprintf(buffer, "Chip ID read correctly, dw\r\n");
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             
-            if(chipid == 0x1E) {
-                // chip id is okay, let us look at the data ready register
-                
-                do{
-                accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
-                //HAL_Delay
-                } while ((accel_drdy & 0x80) == 0);
+            
+            do{
+            accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
+            //HAL_Delay
+            } while ((accel_drdy & 0x80) == 0);
+    
 
-                // read data
-                accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z, &buffer);
-                if (accel_data_status == HAL_OK) {
-                sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2, R: %u\r\n", raw_x, raw_y, raw_z);
-                HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-                
-                HAL_Delay(1000);
-                }
+            // read data
+            accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z, &buffer);
+            if (accel_data_status == HAL_OK) {
+            sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2, R: %u\r\n", raw_x, raw_y, raw_z);
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+            
+            HAL_Delay(1000);
+
             }
-
         } else {
             // Handle the case where initialization failed in the first place
+            sprintf(buffer, "[ERROR] Value of chip_id read from the register is: 0x%02X\r\n", chipid);
+            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
             led_debug_toggle();
             HAL_Delay(100);
-        }
-    }
+        } 
+    } 
 }
-
 
 
 void SystemClock_Config(void){

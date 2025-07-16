@@ -177,22 +177,24 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   HAL_Delay(2);
   
   // configure sensor to stay in normal mode
-  CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
-  HAL_Delay(60);
+  //CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
+  //HAL_Delay(60);
 
 
   // Set acc configuration to normal BW and ODR = 100 Hz
-  CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
-  HAL_Delay(60);
+  //CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
+  //HAL_Delay(60);
 
   chip_id = BMI088_accel_chip_id(&hspi1, GPIOA, GPIO_PIN_9);
 
   // now, verify communication
   if (chip_id == BMI088_ACC_CHIP_ID){
     status = HAL_OK;
+    sprintf(buffer, "ALL OK! Value of chip_id read from the register is: 0x%02X\r\n", chip_id);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer_reg, strlen(buffer_reg), HAL_MAX_DELAY);
   } else {
     sprintf(buffer, "[ERROR] Value of chip_id read from the register is: 0x%02X\r\n", chip_id);
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer_reg), HAL_MAX_DELAY);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer_reg, strlen(buffer_reg), HAL_MAX_DELAY);
     status = HAL_ERROR;
   }
 
