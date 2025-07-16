@@ -28,7 +28,6 @@ int main(void){
     HAL_StatusTypeDef self_test_status = HAL_OK;
     // uint8_t chipid;
     float raw_x, raw_y, raw_z;
-    uint8_t range; //range reg val
     uint8_t accel_drdy;
     char buffer[500]; //for printing
 
@@ -45,7 +44,7 @@ int main(void){
     //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     // Uncomment the line below to perform a self test
-    self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
+    // self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
 
 
     while(1){
@@ -55,20 +54,19 @@ int main(void){
             led_debug_on(); // LED on means init was successful
 
             // chip id is okay, let us look at the data ready register
-            sprintf(buffer, "Chip ID read correctly, dw\r\n");
+            sprintf(buffer, "Chip ID read correctly, don'tcha worreh!\r\n");
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             
             
             do{
             accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
-            //HAL_Delay
             } while ((accel_drdy & 0x80) == 0);
     
 
             // read data
             accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z, &buffer);
             if (accel_data_status == HAL_OK) {
-            sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2, R: %u\r\n", raw_x, raw_y, raw_z);
+            sprintf(buffer, "X: %.4f, Y: %.4f, Z: %.4f m/s^2\r\n", raw_x, raw_y, raw_z);
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             
             HAL_Delay(1000);
