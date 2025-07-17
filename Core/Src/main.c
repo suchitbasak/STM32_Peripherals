@@ -68,8 +68,6 @@ int main(void){
         } 
     } else {
             // Handle the case where initialization failed in the first place
-            sprintf(buffer, "[ERROR] Value of chip_id read from the register is: 0x%02X\r\n", chipid);
-            HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             while(1) {
                 led_debug_toggle();
                 HAL_Delay(100);
