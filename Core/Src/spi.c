@@ -216,8 +216,11 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   CHECK_WRITE(BMI088_ACC_CONF_REG, 0xA8);
   HAL_Delay(60);
 
+  uint8_t range_reg_val = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_RANGE);
+  range_reg_val = (range_reg_val >> 2) << 2; // Setting the last two bits as zero
+
   // Set range = 0x01 for +/-6g
-  CHECK_WRITE(BMI088_ACC_RANGE, 0x01);
+  CHECK_WRITE(BMI088_ACC_RANGE, range_reg_val | 0x01); // Ensuriung the reserved bits are untouched
   HAL_Delay(60);
 
   return(status);
