@@ -187,14 +187,14 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
 
   // Switch the ACC from suspend mode to normal mode
 
-  // configure sensor to stay in normal mode
-  CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
-  HAL_Delay(60);
-
   // Write to ACC_PWR_CTRL_REG, to enter "normal mode"
   CHECK_WRITE(BMI088_ACC_PWR_CTRL_REG, 0x04);
   // wait for 450 microseconds
   HAL_Delay(2);
+
+  // configure sensor to stay in normal mode
+  CHECK_WRITE(ACC_PWR_CONF_REG, 0x00);
+  HAL_Delay(60);
 
   // Performing one more dummy read just in case :P
   uint8_t chip_id_final = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
