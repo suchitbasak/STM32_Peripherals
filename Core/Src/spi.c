@@ -24,7 +24,7 @@
                                     return status;\
                                   }
 
-#define PRINT_BINARY(b, i)          sprintf(buffer, "rx_buffer %dth element\r\n: %d%d%d%d%d%d%d%d", i,\
+#define PRINT_BINARY(b, i)          sprintf(buffer, "rx_buffer %dth element: %d%d%d%d%d%d%d%d\r\n", i,\
                                       (b >> 7) & 1,(b >> 6) & 1,(b >> 5) & 1,(b >> 4) & 1,(b >> 3) & 1,(b >> 2) & 1,(b >> 1) & 1,(b >> 0) & 1);\
                                     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
@@ -337,8 +337,8 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
     uint8_t acc_conf = SPI_read_from_register(hspi, cs_port, cs_pin, 0x40) & 0b00001111;
     uint8_t range_reg_val = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_RANGE);
 
-    PRINT_BINARY_REG(acc_conf, "Acc Config\r\n: %d%d%d%d%d%d%d%d");
-    PRINT_BINARY_REG(range_reg_val, "Range Value\r\n: %d%d%d%d%d%d%d%d");
+    PRINT_BINARY_REG(acc_conf, "Acc Config: %d%d%d%d%d%d%d%d\r\n");
+    PRINT_BINARY_REG(range_reg_val, "Range Value: %d%d%d%d%d%d%d%d\r\n");
 
     for(int i = 0; i<sizeof(rx_buffer); i++) {
       PRINT_BINARY(rx_buffer[i], i);
