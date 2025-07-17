@@ -24,7 +24,7 @@
                                     return status;\
                                   }
 
-#define PRINT_BINARY(b, i)          sprintf(buffer, "rx_buffer[%d]\r\n: %d%d%d%d%d%d%d%d", i\
+#define PRINT_BINARY(b, i)          sprintf(buffer, "rx_buffer %dth element\r\n: %d%d%d%d%d%d%d%d", i\
                                       (b >> 7) & 1,(b >> 6) & 1,(b >> 5) & 1,(b >> 4) & 1,(b >> 3) & 1,(b >> 2) & 1,(b >> 1) & 1,(b >> 0) & 1);\
                                     HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
