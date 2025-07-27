@@ -25,7 +25,7 @@ int main(void){
     HAL_StatusTypeDef init_status;
     HAL_StatusTypeDef data_ready_status;
     HAL_StatusTypeDef self_test_status = HAL_OK;
-    // uint8_t chipid;
+    uint8_t chipid_gyro;
     float raw_x, raw_y, raw_z;
     uint8_t accel_drdy;
     char buffer[500]; //for printing
@@ -34,16 +34,20 @@ int main(void){
     init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
     HAL_StatusTypeDef accel_data_status;
 
-    sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
-    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+    //sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
+    //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
     // Uncomment the line below to perform a self test
     // self_test_status =  BMI088_accel_self_test(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
 
+    chipid_gyro = BMI088_gyro_chip_id(&hspi1, GPIOA, GPIO_PIN_8);
+    sprintf(buffer, "Chip ID GYRO: 0x%d \r\n", chipid_gyro);
+    HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
+
+
 
     if(init_status == HAL_OK) {
-        // chip id is okay, let us look at the data ready register
-        sprintf(buffer, "Chip ID read correctly, don'tcha worreh!\r\n");
+        sprintf(buffer, "Chip ID ACCL read correctly, don'tcha worreh!\r\n");
         HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
         while(1) {

@@ -12,6 +12,10 @@
 #define ACC_SELF_TEST_REG           0x6D
 
 
+// --- BMI088 Gyroscope Register Definitions
+#define BMI088_GYRO_CHIP_ID_REG     0x00
+
+
 #define BMI088_ACC_CHIP_ID          0x1E
 #define BMI088_ACC_STATUS           0x03
 
@@ -226,11 +230,11 @@ HAL_StatusTypeDef BMI088_accel_init(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_po
   return(status);
 }
 
-// // read Chip ID register for the accelerometer from register 0x00
-// uint8_t BMI088_accel_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
-//   uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
-//   return chip_id;
-// }
+// read Chip ID register for the accelerometer from register 0x00
+uint8_t BMI088_accel_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
+  uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_CHIP_ID_REG);
+  return chip_id;
+ }
 
 
 // Perform a self-test
@@ -340,6 +344,7 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
     uint8_t acc_conf = SPI_read_from_register(hspi, cs_port, cs_pin, 0x40) & 0b00001111;
     uint8_t range_reg_val = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_RANGE);
 
+    
     PRINT_BINARY_REG(acc_conf, "Acc Config: %d%d%d%d%d%d%d%d\r\n");
     PRINT_BINARY_REG(range_reg_val, "Range Value: %d%d%d%d%d%d%d%d\r\n");
 
@@ -372,3 +377,9 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
 
 }
 
+
+// Read chip ID for gyroscope
+uint8_t BMI088_gyro_chip_id(SPI_HandleTypeDef *hspi, GPIO_TypeDef* cs_port, uint16_t cs_pin){
+  uint8_t chip_id = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_GYRO_CHIP_ID_REG);
+  return chip_id;
+ }
