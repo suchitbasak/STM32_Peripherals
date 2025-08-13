@@ -344,13 +344,16 @@ HAL_StatusTypeDef BMI088_accel_sensor_data(SPI_HandleTypeDef *hspi, GPIO_TypeDef
     uint8_t acc_conf = SPI_read_from_register(hspi, cs_port, cs_pin, 0x40) & 0b00001111;
     uint8_t range_reg_val = SPI_read_from_register(hspi, cs_port, cs_pin, BMI088_ACC_RANGE);
 
-    
+    // Un-comment to print registers, use for debugging
+    /*
     PRINT_BINARY_REG(acc_conf, "Acc Config: %d%d%d%d%d%d%d%d\r\n");
     PRINT_BINARY_REG(range_reg_val, "Range Value: %d%d%d%d%d%d%d%d\r\n");
 
     for(int i = 0; i<sizeof(rx_buffer); i++) {
       PRINT_BINARY(rx_buffer[i], i);
     }
+    */
+
 
     // First byte received in rx_buffer is dummy, second byte onwards, we get LSB and then MSB for each co-ordinate
     int16_t raw_x = (int16_t)((rx_buffer[2] << 8) | rx_buffer[1]);

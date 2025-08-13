@@ -22,7 +22,7 @@ int main(void){
     MX_USART2_UART_Init();
     led_debug_init();
 
-    HAL_StatusTypeDef init_status;
+    HAL_StatusTypeDef init_status_accel;
     HAL_StatusTypeDef data_ready_status;
     HAL_StatusTypeDef self_test_status = HAL_OK;
     uint8_t chipid_gyro;
@@ -31,7 +31,7 @@ int main(void){
     char buffer[500]; //for printing
 
     BMI088_accel_soft_reset(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
-    init_status =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
+    init_status_accel =  BMI088_accel_init(&hspi1, GPIOA, GPIO_PIN_9, &buffer);
     HAL_StatusTypeDef accel_data_status;
 
     //sprintf(buffer, "Input sensor name: A: Temp; B: Humidity; C: Accel.");
@@ -46,11 +46,10 @@ int main(void){
 
 
 
-    if(init_status == HAL_OK) {
-        sprintf(buffer, "Chip ID ACCL read correctly, don'tcha worreh!\r\n");
-        HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
-
-        while(1) {
+    while(1){
+        if(init_status_accel == HAL_OK) {
+            //sprintf(buffer, "Chip ID ACCL read correctly, don'tcha worreh!\r\n");
+            //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
 
             __NOP();
             led_debug_on(); // LED on means init was successful
@@ -59,7 +58,6 @@ int main(void){
             accel_drdy = SPI_read_from_register(&hspi1, GPIOA, GPIO_PIN_9, 0x03);
             } while ((accel_drdy & 0x80) == 0);
 
-
             // read data
             accel_data_status = BMI088_accel_sensor_data(&hspi1, GPIOA, GPIO_PIN_9, &raw_x, &raw_y, &raw_z, &buffer);
             if (accel_data_status == HAL_OK) {
@@ -67,10 +65,9 @@ int main(void){
             HAL_UART_Transmit(&huart2, (uint8_t*)buffer, strlen(buffer), HAL_MAX_DELAY);
             
             HAL_Delay(1000);
-
             }
-        } 
-    } else {
+
+        } else {
             // Handle the case where initialization failed in the first place
             while(1) {
                 led_debug_toggle();
@@ -78,7 +75,7 @@ int main(void){
             }
             
         } 
-    
+    }
 }
 
 
